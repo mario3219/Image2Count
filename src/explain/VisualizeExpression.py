@@ -138,7 +138,7 @@ def visualize_bulk_expression(value_dict, IDs, exps, name, key='y'):
     adata = get_bulk_expression_of(value_dict, IDs, exps, key)
     sc.pp.normalize_total(adata)
     sc.pp.log1p(adata)
-    sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
+    sc.pp.highly_variable_genes(adata, n_top_genes=20 if 20 < adata.var_names.shape[0] else adata.var_names.shape[0])
     sc.pl.highly_variable_genes(adata, save=name+'.png', show=False)
     sc.pp.scale(adata)
     sc.tl.pca(adata, svd_solver='arpack')
