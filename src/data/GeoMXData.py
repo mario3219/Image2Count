@@ -319,10 +319,11 @@ class GeoMXDataset(Dataset):
             node_features = np.load(file.split('_embed')[0]+'.npy')#[mask.values] # Cant select in torch cuz uint16
 
         label = label[label['ROI']==file_prefix]
-        label = torch.from_numpy(label.iloc[:,2:].sum().to_numpy()).to(torch.float32)
+        label = torch.from_numpy(label.iloc[:,~label.columns.isin(['ROI', 'Patient_ID'])].sum().to_numpy()).to(torch.float32)
         cellexpr = label.clone()
-        if df.columns.shape[0] > 4:
-            cellexpr = torch.from_numpy(df[df.columns[4:].values].values).to(torch.float32) #SC oberseved expression data
+        if ~df.columns.isin(['Image', 'Centroid.X.px', 'Centroid.Y.px', 'Class']).sum()>0:
+            idx = ~df.columns.isin(['Image', 'Centroid.X.px', 'Centroid.Y.px', 'Class'])
+            cellexpr = torch.from_numpy(df[df.columns[idx].values].values).to(torch.float32) #SC oberseved expression data
         if torch.sum(label) > 0:
             if 'Class' in df.columns:
                 data = Data(x=node_features,
