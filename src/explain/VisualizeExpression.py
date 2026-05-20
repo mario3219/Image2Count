@@ -285,7 +285,7 @@ def visualize_cell_expression(value_dict, IDs, exps, name, figure_dir, cell_shap
     plt.savefig(os.path.join(figure_dir, f'violin_highly_varible_{name}.png'))
     plt.close()
 
-    if 'cell_class' in adata.obs.columns.values.tolist() and not np.NaN in adata.obs['cell_class'].values.tolist():
+    if 'cell_class' in adata.obs.columns.values.tolist() and not adata.obs['cell_class'].isna().values.sum():
         confusion_matrix = np.zeros((len(np.unique(adata.obs['leiden'])), len(np.unique(adata.obs['cell_class']))))
 
         # Fill the matrix based on the relationships between categories
