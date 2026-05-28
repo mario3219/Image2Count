@@ -103,6 +103,7 @@ def main(**args):
             ImagePreprocessKRONOS(path=args['preprocess_dir'], 
                             channel_names=args['channel_names'],
                             cell_cutout=args['cell_cutout'],
+                            token_size=args['token_size'],
                             batch_size=args['batch_size'],
                             ids_path=args['cell_ids'])
         elif args['foundation_model'] == 'eva':
