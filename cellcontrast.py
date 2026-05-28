@@ -51,6 +51,12 @@ def parse_args():
                         For '--foundation_model deepcell,':
                         Channel names, example '--channel_names CD3 CD8 CD20'
                         """)
+    parser.add_argument("--token_size",type=int, default=14,
+                        help="""
+                        For '--foundation_model kronos,':
+                        token_size**2 total amount of tokens to accommodate.
+                        token_size has to be in range 1-14.
+                        """)
     parser.add_argument("--mpp",type=float, default=0.399,
                         help="""
                         For '--foundation_model deepcell,':

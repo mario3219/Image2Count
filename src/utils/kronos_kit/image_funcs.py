@@ -94,6 +94,7 @@ def cell_seg(img_path,
              mask_path,
              df, 
              cell_cutout,
+             token_size,
              marker_df,
              channel_names,
              channel_mask):
@@ -104,8 +105,8 @@ def cell_seg(img_path,
     cell_results = torch.empty((
         df.shape[0],
         marker_df.shape[0], 
-        cell_cutout,
-        cell_cutout
+        token_size*16,
+        token_size*16
         ), dtype=torch.float32)
 
     for raw_patch, mask_patch, run in patch_generator(raw,
@@ -114,6 +115,15 @@ def cell_seg(img_path,
                                                       df):
         
         patch_markers,_ = process(raw_patch, mask_patch, marker_df)
+        patch_markers = patch_markers.unsqueeze(0) # (C,H,W) -> (1,C,H,W)
+        if cell_cutout != token_size*16:
+            patch_markers = F.interpolate(
+                    patch_markers,
+                    size=(token_size*16,token_size*16),
+                    mode="bilinear",
+                    align_corners=False
+                    )
+        patch_markers = patch_markers.squeeze(0)
         cell_results[run] = patch_markers
     
     np.save(os.path.join(img_path.split('.ome.tif')[0]+'_cells.npy'), cell_results.numpy())
@@ -126,6 +136,7 @@ def extract_idx(path):
 def image_preprocess(path,
                      channel_names,
                      cell_cutout=64,
+                     token_size=14,
                      batch_size=1,
                      ids_path=""):
  
@@ -189,6 +200,7 @@ def image_preprocess(path,
                               mask_paths[p],
                               df[df["Image"]==img_paths[p].split(os.sep)[-1]],
                               cell_cutout,
+                              token_size,
                               marker_df,
                               channel_names,
                               channel_mask)
