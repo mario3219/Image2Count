@@ -13,7 +13,9 @@ def parse_args():
     parser.add_argument("--cell_cutout", type=int, default=20,
                         help="Size*Size cutout of cell, centered on Centroid Cell position")
     parser.add_argument("--preprocess_workers", type=int, default=1,
-                        help="Number of Workers to use for cell cutout")
+                        help="""Number of threads to use for loading data. Increasing `num_workers` past 24 may result
+                        in large increases in CPU memory footprint. Only recommended for systems with
+                        ``>64 GB`` RAM.""")
     parser.add_argument("--image_preprocess", action="store_true", default=False,
                         help="Wether or not to preprocess images via ZScore normalisation")
 
@@ -41,6 +43,25 @@ def parse_args():
     parser.add_argument("--output_name", type=str, default="out/models/image_contrast.pt",
                         help="Path/name of moel for saving")
 
+    # Jonathan edit
+    parser.add_argument("--foundation_model",type=str, default="",
+                        help="Which foundation model to use")
+    parser.add_argument("--channel_names",nargs='+',type=str, default="",
+                        help="""
+                        For '--foundation_model deepcell,':
+                        Channel names, example '--channel_names CD3 CD8 CD20'
+                        """)
+    parser.add_argument("--mpp",type=float, default=0.399,
+                        help="""
+                        For '--foundation_model deepcell,':
+                        Microns per pixel, passed as float.
+                        """)
+    parser.add_argument("--cell_ids",type=str, default="",
+                        help="""
+                        For --foundation_model deepcell/kronos/eva,
+                        Used instead of {MEASUREMENTS}.csv
+                        """)
+
     # Arguments for image model
     parser.add_argument("--warmup_epochs", type=int, default=10,
                         help="Number of Epochs in which learning rate gets increased")
@@ -63,12 +84,35 @@ def parse_args():
 
 def main(**args):
     if args['image_preprocess']:
-        from src.utils.image_preprocess import image_preprocess as ImagePreprocess
-        ImagePreprocess(path=args['preprocess_dir'], 
-                        img_channels=args['preprocess_channels'],
-                        do_mean_std=args['calc_mean_std'],
-                        cell_cutout=args['cell_cutout'],
-                        num_processes=args['preprocess_workers'])
+        if args['foundation_model'] == 'deepcell':
+            from src.utils.deepcell_kit.image_funcs import image_preprocess as ImagePreprocessDCT
+            ImagePreprocessDCT(path=args['preprocess_dir'], 
+                            channel_names=args['channel_names'],
+                            cell_cutout=args['cell_cutout'],
+                            mpp=args['mpp'],
+                            batch_size=args['batch_size'],
+                            ids_path=args['cell_ids'])
+        elif args['foundation_model'] == 'kronos':
+            from src.utils.kronos_kit.image_funcs import image_preprocess as ImagePreprocessKRONOS
+            ImagePreprocessKRONOS(path=args['preprocess_dir'], 
+                            channel_names=args['channel_names'],
+                            cell_cutout=args['cell_cutout'],
+                            batch_size=args['batch_size'],
+                            ids_path=args['cell_ids'])
+        elif args['foundation_model'] == 'eva':
+            from src.utils.eva_kit.image_funcs import image_preprocess as ImagePreprocessEVA
+            ImagePreprocessEVA(path=args['preprocess_dir'], 
+                            channel_names=args['channel_names'],
+                            cell_cutout=args['cell_cutout'],
+                            batch_size=args['batch_size'],
+                            ids_path=args['cell_ids'])
+        else:
+            from src.utils.image_preprocess import image_preprocess as ImagePreprocess
+            ImagePreprocess(path=args['preprocess_dir'], 
+                            img_channels=args['preprocess_channels'],
+                            do_mean_std=args['calc_mean_std'],
+                            cell_cutout=args['cell_cutout'],
+                            num_processes=args['preprocess_workers'])
     if args['train_image_model']:
         from src.run.CellContrastTrain import train as ImageTrain
         ImageTrain(**args)
